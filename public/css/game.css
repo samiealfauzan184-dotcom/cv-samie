@@ -1,0 +1,145 @@
+/* Mini game CV v3.0. Satu sistem tombol (tebal, bergaris, bayangan solid) untuk semua kontrol.
+   Hover mengangkat 2px, klik menekan, fokus keyboard selalu terlihat, semua target sentuh >= 44px. */
+.arena { margin-top: 24px; }
+
+/* Bilah alat: petunjuk + tombol suara / main ulang */
+.arena-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 12px 12px 0; }
+.arena-hint { font-size: 13px; line-height: 1.5; color: var(--ink); font-weight: 500; }
+.arena-btns { display: flex; gap: 8px; }
+
+.arena-btn,
+.arena-chip {
+  min-height: 44px; cursor: pointer; border: 2px solid var(--carbon); color: var(--carbon);
+  font-family: Arial, sans-serif; font-weight: 700; letter-spacing: .5px;
+  box-shadow: 0 4px 0 var(--carbon), inset 0 2px 0 rgba(255,255,255,.4);
+  transition: transform .12s cubic-bezier(.4,0,.2,1), box-shadow .12s cubic-bezier(.4,0,.2,1), background .15s;
+}
+.arena-btn { padding: 0 16px; background: var(--amber); border-radius: 8px; font-size: 11px; text-transform: uppercase; }
+.arena-btn:hover { background: #ffd54f; transform: translateY(-2px); box-shadow: 0 6px 0 var(--carbon), inset 0 2px 0 rgba(255,255,255,.4); }
+.arena-btn:active { background: #ffb300; transform: translateY(4px); box-shadow: 0 0 0 var(--carbon), inset 0 2px 0 rgba(255,255,255,0); }
+.arena-btn[aria-pressed="true"] { background: var(--platinum); color: #666; }
+
+/* Chip navigasi: lari langsung ke bagian CV */
+.arena-chips { display: flex; flex-wrap: wrap; gap: 10px 8px; margin: 14px 12px 4px; }
+.arena-chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 8px;
+  background: #fff; border-radius: 999px; font-size: 12px;
+  box-shadow: 0 3px 0 var(--carbon);
+}
+.arena-chip .n {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--amber); border: 2px solid var(--carbon); font-size: 11px; line-height: 1;
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .2s;
+}
+.arena-chip:hover { transform: translateY(-2px); box-shadow: 0 5px 0 var(--carbon); }
+.arena-chip:hover .n { transform: scale(1.12) rotate(-6deg); }
+.arena-chip:active { transform: translateY(3px); box-shadow: 0 0 0 var(--carbon); }
+.arena-chip.done { background: var(--ice, #d4e9fa); }
+.arena-chip.done .n { background: #00e676; }
+
+.arena-btn:focus-visible, .arena-chip:focus-visible, .arena-close:focus-visible, .arena-pad button:focus-visible {
+  outline: 3px solid var(--signal); outline-offset: 2px;
+}
+
+/* Arena canvas */
+.arena-stage {
+  position: relative; margin: 12px; border: 3px solid var(--carbon); border-radius: 8px; overflow: hidden;
+  background: var(--sky); aspect-ratio: 720 / 300; touch-action: manipulation;
+  box-shadow: 6px 6px 0 var(--chrome);
+  transition: box-shadow .3s ease;
+}
+.arena-stage:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--signal), 6px 6px 0 var(--chrome); }
+.arena canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+
+/* Petunjuk mulai */
+@keyframes pulse-start {
+  0%, 100% { transform: scale(1); text-shadow: 0 0 10px rgba(255,255,255,.5); }
+  50% { transform: scale(1.05); text-shadow: 0 0 20px rgba(255,255,255,.8); }
+}
+.arena-start {
+  position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; cursor: pointer;
+  background: rgba(33,36,46,.4); color: var(--white); font: 700 13px/1.6 var(--pixel); letter-spacing: 1px; text-transform: uppercase;
+  backdrop-filter: blur(2px); transition: opacity .3s, backdrop-filter .3s;
+}
+.arena-start span { animation: pulse-start 1.5s infinite; background: rgba(0,0,0,.6); padding: 8px 16px; border-radius: 8px; border: 2px solid #fff; }
+.arena-stage:focus .arena-start { opacity: 0; backdrop-filter: blur(0); pointer-events: none; }
+
+/* Panel isi CV */
+.arena-panel { margin: 0 12px 12px; border: 2px solid var(--carbon); border-radius: 8px; background: var(--platinum); overflow: hidden; box-shadow: 4px 4px 0 var(--chrome); }
+.arena-panel.pop { animation: popIn .4s cubic-bezier(.175,.885,.32,1.275) both; }
+@keyframes popIn { 0% { transform: translateY(20px) scale(.95); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+
+/* Panel yang dibuka jamur: tumbuh dari titik jamur mendarat (transform-origin diisi JS), membal seperti jamur Mario */
+@keyframes shroomGrow {
+  0%   { transform: scale(.04, .02); opacity: 0; }
+  40%  { transform: scale(.7, 1.08); opacity: 1; }
+  65%  { transform: scale(1.03, .97); }
+  82%  { transform: scale(.995, 1.01); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.arena-panel.pop.shroom { animation: shroomGrow .8s cubic-bezier(.2,.9,.3,1) both; }
+
+/* Isi panel muncul bergiliran sekali saat dibuka (bukan saat scroll) */
+@keyframes riseIn { 0% { transform: translateY(10px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+.arena-panel.pop .pad > * { animation: riseIn .45s cubic-bezier(.2,.8,.2,1) both; }
+.arena-panel.pop .pad > *:nth-child(1) { animation-delay: .08s; }
+.arena-panel.pop .pad > *:nth-child(2) { animation-delay: .14s; }
+.arena-panel.pop .pad > *:nth-child(3) { animation-delay: .20s; }
+.arena-panel.pop .pad > *:nth-child(4) { animation-delay: .26s; }
+.arena-panel.pop .pad > *:nth-child(5) { animation-delay: .32s; }
+.arena-panel.pop .pad > *:nth-child(6) { animation-delay: .38s; }
+.arena-panel.pop .pad > *:nth-child(n+7) { animation-delay: .44s; }
+
+.arena-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 0 0 12px; border-bottom: 2px solid var(--carbon); background: #fff; }
+.arena-bar::before { content: none; }
+.arena-panel-title { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--chrome); min-width: 0; overflow-wrap: anywhere; }
+.arena-panel-title::before { content: ''; flex: none; width: 10px; height: 10px; background: var(--amber); border: 2px solid var(--carbon); }
+
+.arena-close {
+  min-height: 44px; min-width: 44px; padding: 0 16px; border: 0; border-left: 2px solid var(--carbon); cursor: pointer;
+  background: #ff5252; color: #fff; font: 700 12px Arial, sans-serif; letter-spacing: .5px; text-transform: uppercase;
+  transition: background .15s, transform .12s;
+}
+.arena-close:hover { background: #ff1744; }
+.arena-close:active { transform: translateY(2px); }
+.arena-panel .pad { margin: 16px; }
+.js .arena-panel .meter i.on { background: var(--signal); border-color: #c26d0a; }
+
+/* Pembaca layar: kemajuan permainan */
+.arena-live { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Layar sentuh */
+.arena-pad { display: none; }
+@media (pointer: coarse) {
+  .arena-hint { display: none; }
+  .arena-pad { position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 12px; z-index: 2; }
+  .arena-pad button {
+    min-width: 60px; min-height: 52px; border: 2px solid var(--carbon); border-radius: 12px; background: rgba(255,255,255,.9);
+    color: var(--carbon); font: 700 16px Arial, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none;
+    box-shadow: 0 4px 0 var(--carbon); transition: transform .05s, box-shadow .05s;
+  }
+  .arena-pad .jump { margin-left: auto; background: var(--amber); }
+  .arena-pad button:active { transform: translateY(4px); box-shadow: 0 0 0 var(--carbon); background: #e0e0e0; }
+  .arena-pad .jump:active { background: #ffb300; }
+}
+
+/* Ponsel: kanvas lebih tinggi (kamera mengikuti karakter), kontrol selebar layar */
+@media (max-width: 560px) {
+  .arena { margin-top: 16px; }
+  .arena-tools, .arena-chips { margin-left: 8px; margin-right: 8px; }
+  .arena-btns { width: 100%; }
+  .arena-btns .arena-btn { flex: 1; }
+  .arena-chips { gap: 10px 6px; }
+  .arena-chip { padding-right: 12px; font-size: 11px; }
+  .arena-stage { margin: 12px 8px; box-shadow: 4px 4px 0 var(--chrome); }
+  .arena-stage:focus-visible { box-shadow: 0 0 0 3px var(--signal), 4px 4px 0 var(--chrome); }
+  .arena-panel { margin: 0 8px 12px; }
+  .arena-panel .pad { margin: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-panel.pop, .arena-panel.pop.shroom, .arena-panel.pop .pad > *, .arena-start span { animation: none; }
+  .arena-btn, .arena-chip, .arena-chip .n, .arena-close { transition: none; }
+  .arena-btn:hover, .arena-chip:hover, .arena-chip:hover .n { transform: none; }
+}
+@media print { .arena { display: none !important; } }
